@@ -1,12 +1,14 @@
 """Web server for the hog GUI."""
 import io
 import os
+import logging
 from contextlib import redirect_stdout
 
 from gui_files.common_server import route, start
 
 import hog
 import dice
+import default_graphics
 
 PORT = 31415
 DEFAULT_SERVER = "https://hog.cs61a.org"
@@ -20,14 +22,11 @@ class HogLoggingException(Exception):
 
 @route
 def take_turn(prev_rolls, move_history, goal, game_rules):
+    """Simulate the whole game up to the current turn."""
     fair_dice = dice.make_fair_dice(6)
     dice_results = []
 
-    feral_hogs = game_rules["Feral Hogs"]
-    swine_swap = game_rules["Swine Swap"]
-
-    if not swine_swap:
-        old_is_swap, hog.is_swap = hog.is_swap, lambda score0, score1: False
+    square_swine = game_rules["Square Swine"]
 
     def logged_dice():
         if len(dice_results) < len(prev_rolls):
@@ -38,75 +37,73 @@ def take_turn(prev_rolls, move_history, goal, game_rules):
         return out
 
     final_scores = None
-    final_message = None
-
-    commentary = hog.both(
-        hog.announce_highest(0),
-        hog.both(hog.announce_highest(1), hog.announce_lead_changes()),
-    )
-
-    def log(*logged_scores):
-        nonlocal final_message, commentary
-        f = io.StringIO()
-        with redirect_stdout(f):
-            commentary = commentary(*logged_scores)
-        final_message = f.getvalue()
-        return log
+    who = 0
 
     move_cnt = 0
 
-    def strategy(*scores):
-        nonlocal final_scores, move_cnt
-        final_scores = scores
-        if move_cnt % 2:
-            final_scores = final_scores[::-1]
-        if move_cnt == len(move_history):
-            raise HogLoggingException()
-        move = move_history[move_cnt]
-        move_cnt += 1
-        return move
+    def strategy_for(player):
+        def strategy(*scores):
+            nonlocal final_scores, move_cnt, who
+            final_scores = scores
+            if player:
+                final_scores = final_scores[::-1]
+            who = player
+            if move_cnt == len(move_history):
+                raise HogLoggingException()
+            move = move_history[move_cnt]
+            move_cnt += 1
+            return move
+
+        return strategy
 
     game_over = False
 
     try:
-        final_scores = trace_play(hog.play, strategy, strategy, 0, 0, dice=logged_dice, say=log, goal=goal, feral_hogs=feral_hogs)[:2]
+        final_scores = trace_play(
+            hog.play,
+            strategy_for(0),
+            strategy_for(1),
+            hog.square_update if square_swine else hog.simple_update,
+            0,
+            0,
+            dice=logged_dice,
+            goal=goal,
+        )[:2]
     except HogLoggingException:
         pass
     else:
         game_over = True
 
-    if not swine_swap:
-        hog.is_swap = old_is_swap
-
     return {
         "rolls": dice_results,
         "finalScores": final_scores,
-        "message": final_message,
+        "message": "",
         "gameOver": game_over,
+        "who": who,
     }
 
 
 @route
 def strategy(name, scores):
     STRATEGIES = {
-        "bacon_strategy": hog.bacon_strategy,
-        "swap_strategy": hog.swap_strategy,
+        "tail_strategy": hog.tail_strategy,
+        "square_strategy": hog.square_strategy,
         "final_strategy": hog.final_strategy,
     }
     return STRATEGIES[name](*scores[::-1])
 
-def safe(commentary):
-    def new_commentary(*args, **kwargs):
-        try:
-            result = commentary(*args, **kwargs)
-        except TypeError as e:
-            print("Error in commentary function")
-            result = commentary
-        return safe(result)
-    return new_commentary
+
+@route("dice_graphic.svg")
+def draw_dice_graphic(num):
+    num = int(num[0])
+    # Either draw student-provided dice or our default dice
+    if hasattr(hog, "draw_dice"):
+        graphic = hog.draw_dice(num)
+        return str(graphic)
+    return default_graphics.dice[num]
 
 
-def trace_play(play, strategy0, strategy1, score0, score1, dice, goal, say, feral_hogs):
+def trace_play(play, strategy0, strategy1, update, score0, score1, dice, goal):
     """Wraps the user's play function and
         (1) ensures that strategy0 and strategy1 are called exactly once per turn
         (2) records the entire game, returning the result as a list of dictionaries,
@@ -146,12 +143,11 @@ def trace_play(play, strategy0, strategy1, score0, score1, dice, goal, say, fera
     s0, s1 = play(
         lambda a, b: mod_strategy(0, a, b),
         lambda a, b: mod_strategy(1, a, b),
+        update,
         score0,
         score1,
         dice=mod_dice,
         goal=goal,
-        say=safe(say),
-        feral_hogs=feral_hogs,
     )
     return s0, s1, game_trace
 
