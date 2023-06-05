@@ -49,6 +49,9 @@ def tail_points(opponent_score):
     """
     # BEGIN PROBLEM 2
     "*** YOUR CODE HERE ***"
+    tens = (opponent_score // 10) % 10
+    ones = opponent_score % 10
+    return 2 * abs(tens - ones) + 1
     # END PROBLEM 2
 
 
@@ -66,6 +69,10 @@ def take_turn(num_rolls, opponent_score, dice=six_sided):
     assert num_rolls <= 10, 'Cannot roll more than 10 dice.'
     # BEGIN PROBLEM 3
     "*** YOUR CODE HERE ***"
+    if (num_rolls == 0):
+        return tail_points(opponent_score)
+    else:
+        return roll_dice(num_rolls,dice)
     # END PROBLEM 3
 
 
@@ -89,6 +96,19 @@ def square_update(num_rolls, player_score, opponent_score, dice=six_sided):
 
 # BEGIN PROBLEM 4
 "*** YOUR CODE HERE ***"
+def perfect_square(score):
+    result = score ** 0.5
+    compare = int(result)
+    if (result == compare):
+        return True
+    else:
+        return False
+
+def next_perfect_square(score):
+    num = score ** 0.5
+    num = num + 1
+    new_score = num ** 2
+    return int(new_score)
 # END PROBLEM 4
 
 
@@ -128,6 +148,12 @@ def play(strategy0, strategy1, update,
     who = 0  # Who is about to take a turn, 0 (first) or 1 (second)
     # BEGIN PROBLEM 5
     "*** YOUR CODE HERE ***"
+    while (score0 < goal and score1 < goal):
+        if (who == 0):
+            score0 = update(strategy0(score0,score1), score0, score1, dice)
+        else:
+            score1 = update(strategy1(score1,score0), score1, score0, dice)
+        who = 1 - who
     # END PROBLEM 5
     return score0, score1
 
