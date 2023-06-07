@@ -246,6 +246,15 @@ def make_averaged(original_function, total_samples=1000):
     """
     # BEGIN PROBLEM 8
     "*** YOUR CODE HERE ***"
+    def avg(*args):
+        result = 0
+        n = total_samples
+        while (n != 0):
+            result = result + original_function(*args)
+            n = n - 1
+        average = result / total_samples
+        return average
+    return avg
     # END PROBLEM 8
 
 
@@ -260,6 +269,15 @@ def max_scoring_num_rolls(dice=six_sided, total_samples=1000):
     """
     # BEGIN PROBLEM 9
     "*** YOUR CODE HERE ***"
+    max = 0
+    i = 1
+    while (i <= 10):
+        result = make_averaged(roll_dice, total_samples)(i, dice)
+        if (result > max):
+            max = result
+            roll = i
+        i += 1
+    return roll
     # END PROBLEM 9
 
 
