@@ -84,6 +84,17 @@ def make_repeater(func, n):
     5
     """
     "*** YOUR CODE HERE ***"
+    def repeat(x, n = n):
+        if (n == 0):
+            return x
+        else:
+            f = func(x)
+            n = n - 1
+            while (n != 0):
+                f = func(f)
+                n -= 1
+            return f
+    return repeat
 
 
 def composer(func1, func2):
@@ -102,6 +113,10 @@ def apply_twice(func):
     16
     """
     "*** YOUR CODE HERE ***"
+    def fun(x):
+        return make_repeater(func, x)(2)
+    return fun
+
 
 
 def div_by_primes_under(n):
@@ -116,12 +131,12 @@ def div_by_primes_under(n):
     False
     """
     checker = lambda x: False
-    i = ____________________________
-    while ____________________________:
+    i = 2
+    while (i <= n):
         if not checker(i):
-            checker = ____________________________
-        i = ____________________________
-    return ____________________________
+            checker = (lambda f, i: lambda x: x % i == 0 or f(x))(checker, i)
+        i = i + 1
+    return checker
 
 
 def div_by_primes_under_no_lambda(n):
@@ -137,13 +152,13 @@ def div_by_primes_under_no_lambda(n):
     """
     def checker(x):
         return False
-    i = ____________________________
-    while ____________________________:
+    i = 2
+    while (i <= n):
         if not checker(i):
-            def outer(____________________________):
-                def inner(____________________________):
-                    return ____________________________
-                return ____________________________
-            checker = ____________________________
-        i = ____________________________
-    return ____________________________
+            def outer(f, i):
+                def inner(x):
+                    return x % i == 0 or f(x) # 很关键 这个 f（x）真的很巧妙
+                return inner
+            checker = outer(checker, i) # 这个也是
+        i = i + 1
+    return checker
