@@ -69,9 +69,9 @@ def pingpong(n):
     "*** YOUR CODE HERE ***"
     def helper(k, val, dir):
         while (k < n):
-            if (num_eights(k) >= 1 or k % 8 == 0): ## 不能含有赋值的语句
-                dir = -1 * dir
-            k, val = k + 1, val + dir
+            if (num_eights(k) >= 1 or k % 8 == 0): ## 不能含有赋值的语句 那么就把所有赋值的用return 替换掉
+                return helper(k + 1, val - dir, -1*dir) # 这个地方出错的位置，在于 val - dir 这个地方， 因为 + dir 的话 dir 还没有乘以符号 所以不正确
+            return helper(k+1, val + dir , dir)
         return val
     return helper(1,1,1)
 
