@@ -130,3 +130,13 @@ def count_coins(change):
     True
     """
     "*** YOUR CODE HERE ***"
+    def helper(change, split):
+        if change == 0:
+            return 1
+        elif change < 0:
+            return 0
+        elif split == None: # split不能为none，这个没有注意到，报错其实有提示了已经
+            return 0
+        else:
+            return helper(change - split,  split) + helper(change, next_smaller_coin(split))
+    return helper(change, 25)
