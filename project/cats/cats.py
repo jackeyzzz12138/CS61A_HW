@@ -160,7 +160,7 @@ def autocorrect(typed_word, word_list, diff_function, limit):
         return word_list[l.index(min(l, key=abs))] # index 找到标号
     elif min(l, key=abs) > limit :
         return typed_word
-    elif len(set(l)) <= 1:
+    elif len(set(l)) <= 1: # 集合只能包含唯一元素。因此 len(set(x)) 告诉您 x 的唯一元素集的大小。
         return word_list[0]
 
         
